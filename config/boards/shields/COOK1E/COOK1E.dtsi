@@ -60,22 +60,52 @@ RC(3,0) RC(3,1) RC(3,2) RC(3,3) RC(3,4) RC(3,5) RC(4,5) RC(4,6) RC(3,6) RC(3,7) 
     };
 };
 
-&pro_micro_i2c {
-    status = "okay";
+&pinctrl {
+	spi0_default: spi0_default {
+		group1 {
+			psels = <NRF_PSEL(SPIM_SCK, 0, 5)>,
+				<NRF_PSEL(SPIM_MOSI, 0, 4)>,
+				<NRF_PSEL(SPIM_MISO, 0, 8)>;
+		};
+	};
+	spi0_sleep: spi0_sleep {
+		group1 {
+			psels = <NRF_PSEL(SPIM_SCK, 0, 5)>,
+				<NRF_PSEL(SPIM_MOSI, 0, 4)>,
+				<NRF_PSEL(SPIM_MISO, 0, 8)>;
+			low-power-enable;
+		};
+	};	
+};
 
-    oled: ssd1306@3c {
-        compatible = "solomon,ssd1306fb";
-        reg = <0x3c>;
-        label = "DISPLAY";
-        width = <128>;
-        height = <32>;
-        segment-offset = <0>;
-        page-offset = <0>;
-        display-offset = <0>;
-        multiplex-ratio = <31>;
-        segment-remap;
-        com-invdir;
-        com-sequential;
-        prechargep = <0x22>;
-    };
+
+display_spi: &spi0 {
+	compatible = "nordic,nrf-spim";
+	pinctrl-0 = <&spi0_default>;
+	pinctrl-1 = <&spi0_sleep>;
+	pinctrl-names = "default", "sleep";
+	cs-gpios = <&gpio0 9 GPIO_ACTIVE_HIGH>;
+};
+
+&display_spi {
+	status = "okay";
+	sharp: ls0xx@0 {
+		compatible = "sharp,ls0xx";
+		label = "DISPLAY";
+		spi-max-frequency = <2000000>;
+		reg = <0>;
+		width = <160>;
+		height = <68>;
+		//disp-en-gpios = <&gpio0 6 GPIO_ACTIVE_HIGH>; //testing setting this to 6 from 23
+	};
+};
+
+/ {
+  chosen {
+    zephyr,display = &sharp;
+  };
+};
+
+&usbd {
+	status = "okay";
 };
